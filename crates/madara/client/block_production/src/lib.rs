@@ -270,6 +270,8 @@ impl<Mempool: MempoolProvider> BlockProductionTask<Mempool> {
         // This does not need to be outside the loop, but that saves an allocation
         let mut executed_txs = Vec::with_capacity(batch_size);
 
+        let start_time = Instant::now();
+
         // Cloning transactions: That's a lot of cloning, but we're kind of forced to do that because blockifier takes
         // a `&[Transaction]` slice. In addition, declare transactions have their class behind an Arc.
         loop {
@@ -290,7 +292,14 @@ impl<Mempool: MempoolProvider> BlockProductionTask<Mempool> {
             stats.n_batches += 1;
 
             // Execute the transactions.
+            let start_time_execute = Instant::now();
             let all_results = self.executor.execute_txs(&txs_to_process_blockifier);
+            tracing::info!(
+                "👀 This is exactly how long execute took - {:?}, txs count {:?} tps - {:?}",
+                start_time_execute.elapsed(),
+                all_results.len(),
+                all_results.len() * 1000 / start_time_execute.elapsed().as_millis() as usize
+            );
             // When the bouncer cap is reached, blockifier will return fewer results than what we asked for.
             block_now_full = all_results.len() < txs_to_process_blockifier.len();
 
@@ -357,11 +366,12 @@ impl<Mempool: MempoolProvider> BlockProductionTask<Mempool> {
             .txs_re_add(txs_to_process, executed_txs)
             .map_err(|err| Error::Unexpected(format!("Mempool error: {err:#}").into()))?;
 
-        tracing::debug!(
-            "Finished tick with {} new transactions, now at {} - re-adding {} txs to mempool",
+        tracing::info!(
+            "Finished tick with {} new transactions, now at {} - re-adding {} txs to mempool in time {:?}",
             stats.n_added_to_block,
             self.block.inner.transactions.len(),
-            stats.n_re_added_to_mempool
+            stats.n_re_added_to_mempool,
+            start_time.elapsed()
         );
 
         Ok(ContinueBlockResult { state_diff, visited_segments, bouncer_weights, stats, block_now_full })

@@ -1,7 +1,8 @@
 use crate::{blockifier_state_adapter::BlockifierStateAdapter, Error};
 use blockifier::{
     blockifier::{
-        config::TransactionExecutorConfig, stateful_validator::StatefulValidator,
+        config::{ConcurrencyConfig, TransactionExecutorConfig},
+        stateful_validator::StatefulValidator,
         transaction_executor::TransactionExecutor,
     },
     context::{BlockContext, ChainInfo, FeeTokenAddresses},
@@ -25,7 +26,9 @@ impl ExecutionContext {
             self.init_cached_state(),
             self.block_context.clone(),
             // No concurrency yet.
-            TransactionExecutorConfig { concurrency_config: Default::default() },
+            TransactionExecutorConfig {
+                concurrency_config: ConcurrencyConfig { enabled: false, n_workers: 5, chunk_size: 10000 },
+            },
         )
     }
 

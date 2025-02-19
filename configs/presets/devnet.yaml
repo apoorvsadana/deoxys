@@ -7,7 +7,7 @@ parent_fee_token_address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b156
 latest_protocol_version: "0.13.2"
 block_time: "10s"
 pending_block_update_time: "2s"
-execution_batch_size: 16
+execution_batch_size: 10000
 bouncer_config:
   block_max_capacity:
     builtin_count:
